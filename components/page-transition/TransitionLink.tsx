@@ -1,30 +1,34 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { type MouseEvent, type ReactNode, useRef } from "react";
+import { MouseEvent, useRef } from "react";
 import gsap from "gsap";
+import { useRouter } from "next/navigation";
 
 type TransitionLinkProps = {
     href: string;
-    children: ReactNode;
-    className?: string;
-    number?: string;
+    number: string;
     label: string;
+    children: React.ReactNode;
+    className?: string;
 };
 
 export default function TransitionLink({
     href,
+    number,
+    label,
     children,
     className = "",
-    number = "01",
-    label,
 }: TransitionLinkProps) {
     const router = useRouter();
     const linkRef = useRef<HTMLAnchorElement>(null);
 
-    const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
-        event.preventDefault();
+    const handleClick = (e: MouseEvent<HTMLAnchorElement>) => {
+        e.preventDefault();
+
+        if (document.body.dataset.transitioning === "true") {
+            return;
+        }
 
         const link = linkRef.current;
 
@@ -33,13 +37,8 @@ export default function TransitionLink({
             return;
         }
 
-        if (document.body.dataset.transitioning === "true") return;
-
         document.body.dataset.transitioning = "true";
 
-        /*
-         * Tell the current page to destroy its composition.
-         */
         window.dispatchEvent(
             new CustomEvent("page-transition-start", {
                 detail: {
@@ -50,351 +49,412 @@ export default function TransitionLink({
             }),
         );
 
-        /*
-         * The actual menu text.
-         */
-        const menuName = link.querySelector(".menu-name") as HTMLElement | null;
+        const rect = link.getBoundingClientRect();
 
-        if (!menuName) {
-            router.push(href);
-            document.body.dataset.transitioning = "false";
-            return;
-        }
+        const scene = document.createElement("div");
+        scene.className = "transition-scene";
 
-        const rect = menuName.getBoundingClientRect();
-        const styles = window.getComputedStyle(menuName);
+        scene.innerHTML = `
+            <div class="transition-veil"></div>
 
-        /*
-         * Create transition scene.
-         */
-        const transition = document.createElement("div");
+            <div class="transition-grid"></div>
 
-        transition.className = "transition-scene";
+            <div class="transition-noise"></div>
 
-        transition.innerHTML = `
-      <div class="transition-background"></div>
-
-      <div class="transition-content">
-
-        <div class="transition-top">
-          <span>USEFULL THINGS</span>
-          <span>447 / TRANSITION</span>
-        </div>
-
-        <div class="transition-portal">
-
-          <div class="transition-number">
-            ${number}
-          </div>
-
-          <div class="transition-word-mask">
-            <div class="transition-word">
-              ${label}
+            <div class="transition-top">
+                <span>USEFULL THINGS</span>
+                <span>TRANSITION / ${number}</span>
             </div>
-          </div>
 
-        </div>
+            <div class="transition-bottom">
+                <span>ENTERING — ${label}</span>
+                <span>2026 / UA</span>
+            </div>
 
-        <div class="transition-bottom">
-          <span>ENTERING NEW VIEW</span>
-          <span>2026</span>
-        </div>
+            <div class="transition-content">
 
-      </div>
-    `;
+                <div class="transition-center">
 
-        document.body.appendChild(transition);
+                    <div class="transition-portal">
+                        <div class="transition-ring transition-ring-1"></div>
+                        <div class="transition-ring transition-ring-2"></div>
+                        <div class="transition-ring transition-ring-3"></div>
+                    </div>
 
-        const background = transition.querySelector(
-            ".transition-background",
-        ) as HTMLElement;
+                    <div class="transition-number">
+                        ${number}
+                    </div>
 
-        const content = transition.querySelector(
+                    <div class="transition-word">
+                        ${label}
+                    </div>
+
+                    <div class="transition-coordinates">
+                        <span>48°51'12"N</span>
+                        <span>02°20'55"E</span>
+                    </div>
+
+                    <div class="transition-caption">
+                        ENTERING — NEW VIEW
+                    </div>
+
+                    <div class="transition-progress">
+                        <span></span>
+                    </div>
+
+                </div>
+
+            </div>
+
+            <div class="transition-scan"></div>
+        `;
+
+        document.body.appendChild(scene);
+
+        const veil = scene.querySelector(".transition-veil") as HTMLElement;
+
+        const grid = scene.querySelector(".transition-grid") as HTMLElement;
+
+        const noise = scene.querySelector(".transition-noise") as HTMLElement;
+
+        const content = scene.querySelector(
             ".transition-content",
         ) as HTMLElement;
 
-        const portal = transition.querySelector(
-            ".transition-portal",
-        ) as HTMLElement;
+        const portal = scene.querySelector(".transition-portal") as HTMLElement;
 
-        const wordMask = transition.querySelector(
-            ".transition-word-mask",
-        ) as HTMLElement;
+        const rings = scene.querySelectorAll(".transition-ring");
 
-        const word = transition.querySelector(
-            ".transition-word",
-        ) as HTMLElement;
+        const word = scene.querySelector(".transition-word") as HTMLElement;
 
-        const transitionNumber = transition.querySelector(
+        const transitionNumber = scene.querySelector(
             ".transition-number",
         ) as HTMLElement;
 
-        /*
-         * Scene.
-         */
-        gsap.set(transition, {
-            position: "fixed",
-            inset: 0,
-            width: "100vw",
-            height: "100vh",
-            zIndex: 99999,
-            pointerEvents: "none",
-            overflow: "hidden",
-        });
+        const coordinates = scene.querySelector(
+            ".transition-coordinates",
+        ) as HTMLElement;
+
+        const caption = scene.querySelector(
+            ".transition-caption",
+        ) as HTMLElement;
+
+        const progress = scene.querySelector(
+            ".transition-progress span",
+        ) as HTMLElement;
+
+        const top = scene.querySelector(".transition-top") as HTMLElement;
+
+        const bottom = scene.querySelector(".transition-bottom") as HTMLElement;
+
+        const scan = scene.querySelector(".transition-scan") as HTMLElement;
 
         /*
-         * Yellow field starts as a tiny circle.
-         */
-        gsap.set(background, {
-            position: "absolute",
-            inset: 0,
-            background: "#d8ff38",
-            scale: 0,
-            transformOrigin: "center center",
-            willChange: "transform",
-        });
-
-        /*
-         * Content exists above the yellow field.
-         */
-        gsap.set(content, {
-            position: "absolute",
-            inset: 0,
-            opacity: 0,
-            color: "#0a0a09",
-        });
-
-        /*
-         * Start exactly where the clicked menu text is.
+         * Position the portal exactly over the clicked menu item.
          */
         gsap.set(portal, {
-            position: "absolute",
-
-            left: rect.left,
-            top: rect.top,
-
-            width: rect.width,
-            height: rect.height,
-
-            display: "flex",
-            alignItems: "center",
-
-            transformOrigin: "center center",
-
-            willChange: "left,top,width,height,transform",
-        });
-
-        gsap.set(wordMask, {
-            width: "100%",
-            height: "100%",
-            overflow: "visible",
-            display: "flex",
-            alignItems: "center",
+            x: rect.left + rect.width / 2 - window.innerWidth / 2,
+            y: rect.top + rect.height / 2 - window.innerHeight / 2,
+            scale: 0.1,
         });
 
         /*
-         * IMPORTANT:
-         *
-         * Copy the real menu typography.
-         * This is what makes the element feel like
-         * the original menu item rather than a new object.
+         * Initial state.
          */
+        gsap.set(veil, {
+            clipPath: `circle(0px at ${rect.left + rect.width / 2}px ${
+                rect.top + rect.height / 2
+            }px)`,
+        });
+
+        gsap.set(grid, {
+            opacity: 0,
+            scale: 1.15,
+        });
+
+        gsap.set(noise, {
+            opacity: 0,
+        });
+
+        gsap.set(content, {
+            opacity: 1,
+        });
+
         gsap.set(word, {
-            position: "relative",
-
-            width: "auto",
-            height: "auto",
-
-            display: "block",
-
-            fontFamily: styles.fontFamily,
-            fontSize: styles.fontSize,
-            fontWeight: styles.fontWeight,
-            fontStyle: styles.fontStyle,
-            lineHeight: styles.lineHeight,
-            letterSpacing: styles.letterSpacing,
-            textTransform: styles.textTransform,
-
-            color: "#0a0a09",
-
-            whiteSpace: "nowrap",
-
-            transformOrigin: "left center",
-
-            willChange: "transform,font-size,letter-spacing",
+            opacity: 0,
+            scale: 0.7,
+            y: 30,
         });
 
         gsap.set(transitionNumber, {
-            position: "absolute",
-            left: "-2rem",
-            bottom: 0,
-
-            fontSize: "10px",
-            lineHeight: 1,
-            letterSpacing: "0.1em",
-
             opacity: 0,
-            x: -12,
+            y: 20,
         });
 
-        /*
-         * Make the real menu item disappear
-         * just as its clone takes over.
-         */
-        gsap.to(link, {
+        gsap.set(coordinates, {
             opacity: 0,
-            duration: 0.3,
-            ease: "power2.in",
+            y: 15,
         });
 
-        /*
-         * Transition timeline.
-         */
-        const tl = gsap.timeline({
-            defaults: {
-                overwrite: "auto",
-            },
-
-            onComplete: () => {
-                router.push(href);
-            },
+        gsap.set(caption, {
+            opacity: 0,
+            y: 15,
         });
 
+        gsap.set(progress, {
+            scaleX: 0,
+            transformOrigin: "left center",
+        });
+
+        gsap.set(top, {
+            opacity: 0,
+            y: -15,
+        });
+
+        gsap.set(bottom, {
+            opacity: 0,
+            y: 15,
+        });
+
+        gsap.set(scan, {
+            opacity: 0,
+            y: "-100%",
+        });
+
+        gsap.set(rings, {
+            opacity: 0,
+            scale: 0.5,
+        });
+
+        const tl = gsap.timeline();
+
         /*
-         * 1 — The clicked word detaches from the menu.
+         * PHASE 1
+         * Portal expands from clicked menu item.
          */
         tl.to(
-            word,
+            portal,
             {
-                scale: 1.08,
-                duration: 0.25,
-                ease: "power2.out",
+                duration: 0.65,
+                x: 0,
+                y: 0,
+                scale: 1,
+                ease: "power4.inOut",
             },
             0,
         )
 
+            .to(
+                veil,
+                {
+                    duration: 0.9,
+                    clipPath: `circle(150vmax at ${
+                        rect.left + rect.width / 2
+                    }px ${rect.top + rect.height / 2}px)`,
+                    ease: "power4.inOut",
+                },
+                0.05,
+            )
+
+            .to(
+                grid,
+                {
+                    duration: 0.9,
+                    opacity: 1,
+                    scale: 1,
+                    ease: "power3.out",
+                },
+                0.3,
+            )
+
+            .to(
+                noise,
+                {
+                    duration: 0.5,
+                    opacity: 0.055,
+                },
+                0.4,
+            )
+
             /*
-             * 2 — Number appears beside it.
+             * UI enters.
              */
+            .to(
+                top,
+                {
+                    duration: 0.45,
+                    opacity: 1,
+                    y: 0,
+                    ease: "power3.out",
+                },
+                0.45,
+            )
+
+            .to(
+                bottom,
+                {
+                    duration: 0.45,
+                    opacity: 1,
+                    y: 0,
+                    ease: "power3.out",
+                },
+                0.5,
+            )
+
+            /*
+             * Center content.
+             */
+            .to(
+                rings,
+                {
+                    duration: 0.8,
+                    opacity: 1,
+                    scale: 1,
+                    stagger: 0.08,
+                    ease: "power3.out",
+                },
+                0.55,
+            )
+
             .to(
                 transitionNumber,
                 {
+                    duration: 0.4,
                     opacity: 1,
-                    x: 0,
-                    duration: 0.3,
+                    y: 0,
                     ease: "power3.out",
                 },
-                0.08,
+                0.65,
             )
 
-            /*
-             * 3 — The menu word travels toward the center.
-             */
-            .to(
-                portal,
-                {
-                    left: "50%",
-                    top: "50%",
-
-                    xPercent: -50,
-                    yPercent: -50,
-
-                    duration: 0.75,
-
-                    ease: "power4.inOut",
-                },
-                0.12,
-            )
-
-            /*
-             * 4 — At the same moment the yellow field
-             * starts expanding from behind it.
-             */
-            .to(
-                background,
-                {
-                    scale: 1,
-
-                    duration: 1.05,
-
-                    ease: "power4.inOut",
-                },
-                0.28,
-            )
-
-            /*
-             * 5 — UI metadata appears.
-             */
-            .to(
-                content,
-                {
-                    opacity: 1,
-                    duration: 0.3,
-                    ease: "power2.out",
-                },
-                0.48,
-            )
-
-            /*
-             * 6 — The actual word becomes huge.
-             */
             .to(
                 word,
                 {
-                    fontSize: "clamp(8rem, 22vw, 18rem)",
-
-                    fontWeight: 700,
-
-                    letterSpacing: "-0.07em",
-
+                    duration: 0.7,
+                    opacity: 1,
                     scale: 1,
+                    y: 0,
+                    ease: "power4.out",
+                },
+                0.65,
+            )
 
+            .to(
+                coordinates,
+                {
+                    duration: 0.4,
+                    opacity: 1,
+                    y: 0,
+                    ease: "power3.out",
+                },
+                0.85,
+            )
+
+            .to(
+                caption,
+                {
+                    duration: 0.4,
+                    opacity: 1,
+                    y: 0,
+                    ease: "power3.out",
+                },
+                0.9,
+            )
+
+            .to(
+                progress,
+                {
                     duration: 1,
-
-                    ease: "power4.inOut",
+                    scaleX: 1,
+                    ease: "power2.inOut",
                 },
                 0.55,
             )
 
             /*
-             * 7 — Slight physical tilt.
+             * SCAN.
              */
             .to(
-                portal,
+                scan,
                 {
-                    rotation: -2,
-                    scale: 1.035,
-
                     duration: 0.7,
-
-                    ease: "power3.inOut",
+                    opacity: 1,
+                    y: "100vh",
+                    ease: "power2.inOut",
                 },
-                0.72,
+                0.85,
             )
 
             /*
-             * 8 — Tiny settling movement.
+             * =====================================================
+             * CRITICAL PART
+             * =====================================================
              */
-            .to(
-                portal,
-                {
-                    y: "-=8",
-                    duration: 0.35,
-                    ease: "power2.out",
+            .call(
+                () => {
+                    router.push(href);
                 },
-                1.35,
+                [],
+                1.15,
             )
 
             /*
-             * Keep the final frame for a moment,
-             * then navigate.
+             * Give the new page time to mount and START its animation.
              */
             .to(
                 {},
                 {
-                    duration: 0.18,
+                    duration: 0.55,
                 },
-            );
+            )
+
+            /*
+             * Then remove the transition layer.
+             */
+            .to(
+                [
+                    word,
+                    transitionNumber,
+                    coordinates,
+                    caption,
+                    top,
+                    bottom,
+                    grid,
+                    noise,
+                ],
+                {
+                    duration: 0.45,
+                    opacity: 0,
+                    y: (i) => (i % 2 === 0 ? -15 : 15),
+                    ease: "power3.inOut",
+                },
+            )
+
+            .to(
+                portal,
+                {
+                    duration: 0.45,
+                    scale: 2,
+                    opacity: 0,
+                    ease: "power3.in",
+                },
+                "<",
+            )
+
+            .to(
+                veil,
+                {
+                    duration: 0.65,
+                    opacity: 0,
+                    ease: "power3.inOut",
+                },
+                "-=0.25",
+            )
+
+            .call(() => {
+                scene.remove();
+                document.body.dataset.transitioning = "false";
+            });
     };
 
     return (

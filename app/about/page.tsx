@@ -1,7 +1,8 @@
 "use client";
 
-import Link from "next/link";
 import { useLayoutEffect, useRef } from "react";
+import Link from "next/link";
+
 import gsap from "gsap";
 
 export default function AboutPage() {
@@ -11,30 +12,6 @@ export default function AboutPage() {
         const ctx = gsap.context(() => {
             const transition = document.querySelector(
                 ".transition-scene",
-            ) as HTMLElement | null;
-
-            const transitionBackground = transition?.querySelector(
-                ".transition-background",
-            ) as HTMLElement | null;
-
-            const transitionPortal = transition?.querySelector(
-                ".transition-portal",
-            ) as HTMLElement | null;
-
-            const transitionWord = transition?.querySelector(
-                ".transition-word",
-            ) as HTMLElement | null;
-
-            const transitionNumber = transition?.querySelector(
-                ".transition-number",
-            ) as HTMLElement | null;
-
-            const transitionTop = transition?.querySelector(
-                ".transition-top",
-            ) as HTMLElement | null;
-
-            const transitionBottom = transition?.querySelector(
-                ".transition-bottom",
             ) as HTMLElement | null;
 
             const header = document.querySelector(
@@ -57,140 +34,63 @@ export default function AboutPage() {
                 ".about-footer",
             ) as HTMLElement | null;
 
+            const elements = [
+                header,
+                number,
+                title,
+                description,
+                footer,
+            ].filter(Boolean);
+
             /*
-             * ----------------------------------------------------
-             * NORMAL ENTRY
-             * ----------------------------------------------------
-             *
-             * If About is opened directly, there is no transition
-             * scene. Use the normal page reveal.
+             * --------------------------------
+             * DIRECT LOAD
+             * --------------------------------
              */
-            if (!transition || !transitionWord || !title) {
-                gsap.from(".about-reveal", {
-                    y: 80,
+
+            if (!transition) {
+                gsap.set(elements, {
                     opacity: 0,
-                    duration: 1.2,
-                    stagger: 0.08,
-                    ease: "power4.out",
-                    delay: 0.15,
                 });
 
-                return;
-            }
-
-            /*
-             * Keep About hidden underneath the transition.
-             */
-            gsap.set(
-                [header, number, title, description, footer].filter(Boolean),
-                {
-                    opacity: 0,
-                },
-            );
-
-            /*
-             * The title starts lower and slightly rotated.
-             */
-            gsap.set(title, {
-                y: 100,
-                rotateX: -25,
-                transformOrigin: "center bottom",
-            });
-
-            /*
-             * Prepare individual title lines.
-             */
-            const titleText = title.childNodes;
-
-            gsap.set(titleText, {
-                opacity: 1,
-            });
-
-            /*
-             * Give the transition a moment to settle after
-             * Next has mounted the new route.
-             */
-            const enterTimer = window.setTimeout(() => {
-                const tl = gsap.timeline({
-                    defaults: {
-                        ease: "power4.inOut",
-                    },
-
-                    onComplete: () => {
-                        transition.remove();
-
-                        document.body.dataset.transitioning = "false";
-                    },
+                gsap.set(title, {
+                    y: 100,
+                    transformOrigin: "center bottom",
                 });
 
-                /*
-                 * ------------------------------------------------
-                 * PHASE 1
-                 *
-                 * Giant ABOUT starts collapsing.
-                 * ------------------------------------------------
-                 */
+                gsap.set(description, {
+                    y: 40,
+                });
 
-                tl.to(
-                    transitionWord,
-                    {
-                        scale: 0.72,
-                        y: "-=8vh",
-                        opacity: 0.9,
-                        duration: 0.55,
-                        ease: "power4.in",
-                    },
-                    0,
-                )
+                gsap.set(footer, {
+                    y: 25,
+                });
 
-                    /*
-                     * Number pulls away.
-                     */
+                const tl = gsap.timeline();
+
+                tl.to(header, {
+                    opacity: 1,
+                    duration: 0.5,
+                    ease: "power3.out",
+                })
                     .to(
-                        transitionNumber,
+                        number,
                         {
-                            x: -30,
-                            opacity: 0,
+                            opacity: 1,
                             duration: 0.4,
                         },
-                        0,
+                        "-=0.25",
                     )
-
-                    /*
-                     * ------------------------------------------------
-                     * PHASE 2
-                     *
-                     * About's actual typography appears underneath.
-                     * ------------------------------------------------
-                     */
-
                     .to(
                         title,
                         {
                             opacity: 1,
                             y: 0,
-                            rotateX: 0,
-                            duration: 0.9,
+                            duration: 1,
                             ease: "power4.out",
                         },
-                        0.25,
+                        "-=0.15",
                     )
-
-                    /*
-                     * The supporting content begins appearing.
-                     */
-                    .to(
-                        [header, number],
-                        {
-                            opacity: 1,
-                            y: 0,
-                            duration: 0.55,
-                            stagger: 0.06,
-                            ease: "power3.out",
-                        },
-                        0.5,
-                    )
-
                     .to(
                         description,
                         {
@@ -199,73 +99,194 @@ export default function AboutPage() {
                             duration: 0.7,
                             ease: "power3.out",
                         },
-                        0.62,
+                        "-=0.5",
                     )
-
-                    /*
-                     * ------------------------------------------------
-                     * PHASE 3
-                     *
-                     * Yellow field opens away from the page.
-                     * ------------------------------------------------
-                     */
-
-                    .to(
-                        transitionBackground,
-                        {
-                            scale: 0.82,
-                            opacity: 0,
-                            duration: 1.05,
-                            ease: "power4.inOut",
-                        },
-                        0.55,
-                    )
-
-                    /*
-                     * Metadata disappears as the actual page
-                     * takes control.
-                     */
-                    .to(
-                        [transitionTop, transitionBottom],
-                        {
-                            opacity: 0,
-                            duration: 0.35,
-                        },
-                        0.65,
-                    )
-
-                    /*
-                     * Portal itself lifts away.
-                     */
-                    .to(
-                        transitionPortal,
-                        {
-                            scale: 0.7,
-                            y: "-=14vh",
-                            opacity: 0,
-                            duration: 0.85,
-                            ease: "power4.in",
-                        },
-                        0.75,
-                    )
-
-                    /*
-                     * Footer arrives last.
-                     */
                     .to(
                         footer,
                         {
                             opacity: 1,
+                            y: 0,
                             duration: 0.5,
-                            ease: "power2.out",
+                            ease: "power3.out",
                         },
-                        0.95,
+                        "-=0.3",
                     );
-            }, 80);
 
-            return () => {
-                window.clearTimeout(enterTimer);
-            };
+                return;
+            }
+
+            /*
+             * --------------------------------
+             * PAGE TRANSITION
+             * --------------------------------
+             */
+
+            gsap.set(elements, {
+                opacity: 0,
+            });
+
+            gsap.set(title, {
+                y: 120,
+                transformOrigin: "center bottom",
+            });
+
+            gsap.set(description, {
+                y: 45,
+            });
+
+            gsap.set(footer, {
+                y: 25,
+            });
+
+            /*
+             * About starts while transition
+             * is still covering the screen.
+             */
+
+            const tl = gsap.timeline({ delay: 2 });
+
+            tl.to(
+                {},
+                {
+                    duration: 0.12,
+                },
+            )
+
+                /*
+                 * TITLE
+                 */
+                .to(title, {
+                    opacity: 1,
+                    y: 0,
+                    duration: 1.1,
+                    ease: "power4.out",
+                })
+
+                /*
+                 * HEADER
+                 */
+                .to(
+                    header,
+                    {
+                        opacity: 1,
+                        duration: 0.45,
+                        ease: "power3.out",
+                    },
+                    "-=0.75",
+                )
+
+                /*
+                 * NUMBER
+                 */
+                .to(
+                    number,
+                    {
+                        opacity: 1,
+                        duration: 0.4,
+                        ease: "power3.out",
+                    },
+                    "-=0.25",
+                )
+
+                /*
+                 * DESCRIPTION
+                 */
+                .to(
+                    description,
+                    {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.7,
+                        ease: "power3.out",
+                    },
+                    "-=0.2",
+                )
+
+                /*
+                 * Let the About animation breathe.
+                 */
+                .to(
+                    {},
+                    {
+                        duration: 0.25,
+                    },
+                )
+
+                /*
+                 * Remove transition UI.
+                 */
+                .to(
+                    transition.querySelectorAll(
+                        ".transition-top, .transition-bottom, .transition-grid, .transition-noise, .transition-caption, .transition-coordinates, .transition-number, .transition-progress",
+                    ),
+                    {
+                        opacity: 0,
+                        duration: 0.35,
+                        ease: "power3.inOut",
+                    },
+                )
+
+                /*
+                 * Portal / rings leave.
+                 */
+                .to(
+                    transition.querySelector(".transition-portal"),
+                    {
+                        scale: 1.7,
+                        opacity: 0,
+                        duration: 0.5,
+                        ease: "power3.in",
+                    },
+                    "<",
+                )
+
+                .to(
+                    transition.querySelectorAll(".transition-ring"),
+                    {
+                        scale: 1.5,
+                        opacity: 0,
+                        duration: 0.5,
+                        stagger: 0.05,
+                        ease: "power3.in",
+                    },
+                    "<",
+                )
+
+                /*
+                 * Footer arrives.
+                 */
+                .to(
+                    footer,
+                    {
+                        opacity: 1,
+                        y: 0,
+                        duration: 0.5,
+                        ease: "power3.out",
+                    },
+                    "-=0.15",
+                )
+
+                /*
+                 * Dark veil disappears last.
+                 */
+                .to(
+                    transition.querySelector(".transition-veil"),
+                    {
+                        opacity: 0,
+                        duration: 0.65,
+                        ease: "power3.inOut",
+                    },
+                    "-=0.35",
+                )
+
+                /*
+                 * Cleanup.
+                 */
+                .call(() => {
+                    transition.remove();
+
+                    document.body.dataset.transitioning = "false";
+                });
         }, root);
 
         return () => ctx.revert();
